@@ -1,3 +1,4 @@
+import ReactMarkdown from "react-markdown";
 import { cn } from "@/lib/utils";
 import type { Message } from "@/types";
 
@@ -34,8 +35,8 @@ export function MessageBubble({ message }: MessageBubbleProps) {
           Round {message.roundNumber + 1}
         </span>
       </div>
-      <div className="prose prose-sm max-w-none text-foreground whitespace-pre-wrap leading-relaxed">
-        {message.content}
+      <div className="prose prose-sm max-w-none text-foreground prose-headings:text-foreground prose-strong:text-foreground prose-p:my-2 prose-ul:my-2 prose-ol:my-2 prose-li:my-0.5">
+        <ReactMarkdown>{message.content}</ReactMarkdown>
       </div>
     </div>
   );
