@@ -81,3 +81,4 @@ test-results/
 # Misc
 *.bak
 *.tmp
+.playwright-mcp/
