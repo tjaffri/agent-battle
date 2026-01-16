@@ -4,11 +4,16 @@
 
 ### Branch Protection is Enforced
 - **Never push directly to `main`** - all changes must go through PRs
-- **Always create a feature branch** before making changes:
+- **Always create a fresh feature branch** before making changes:
   ```bash
+  git checkout main
+  git pull
   git checkout -b feature/your-feature-name
   ```
+- **Do not reuse feature branches** after a PR has been merged - always start fresh from `main`
 - PRs require all CI checks (Lint, Test, Build) to pass before merging
+- **Do not auto-merge PRs** - create the PR and let the human review and merge it
+- After creating a PR, inform the user of the PR URL so they can review it
 
 ### Before Committing
 **Always run tests and linters locally before committing:**
