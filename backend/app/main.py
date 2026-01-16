@@ -37,8 +37,16 @@ async def lifespan(app: FastAPI):
         os.environ["LANGCHAIN_API_KEY"] = settings.langsmith_api_key
         os.environ["LANGCHAIN_PROJECT"] = settings.langsmith_project
 
-    # Initialize debate graph
-    debate_graph = DebateGraph(settings)
+    # Initialize debate graph (lazy - will fail on first use if no API keys)
+    try:
+        if settings.openai_api_key and settings.google_api_key:
+            debate_graph = DebateGraph(settings)
+        else:
+            print(
+                "Warning: API keys not configured. Set OPENAI_API_KEY and GOOGLE_API_KEY."
+            )
+    except Exception as e:
+        print(f"Warning: Failed to initialize debate graph: {e}")
 
     yield
 
