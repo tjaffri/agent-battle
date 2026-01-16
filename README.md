@@ -2,8 +2,6 @@
 
 A multi-LLM debate application where GPT-4o and Gemini 2.0 engage in iterative debates, critiquing each other's responses in real-time.
 
-![Agent Battle Screenshot](https://via.placeholder.com/800x400?text=Agent+Battle+Screenshot)
-
 ## Features
 
 - **Dual AI Debate**: Watch GPT-4o and Gemini 2.0 respond simultaneously to your questions
