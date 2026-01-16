@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef } from "react";
-import type { DebateState, Message, StreamEvent } from "@/types";
+import type { DebateState, Message, StreamEvent } from "../types";
 
 // In production (Vercel), use relative /api path. In development, use localhost.
 const API_URL =

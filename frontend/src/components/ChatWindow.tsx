@@ -1,9 +1,9 @@
 import { useEffect, useRef } from "react";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { Card, CardHeader, CardTitle, CardContent } from "./ui/card";
+import { ScrollArea } from "./ui/scroll-area";
 import { MessageBubble } from "./MessageBubble";
-import type { Message, LLMProvider } from "@/types";
-import { cn } from "@/lib/utils";
+import type { Message, LLMProvider } from "../types";
+import { cn } from "../lib/utils";
 import { Sparkles, Bot } from "lucide-react";
 
 interface ChatWindowProps {

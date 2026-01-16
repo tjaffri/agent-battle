@@ -1,4 +1,4 @@
-import { DebateArena } from "@/components/DebateArena";
+import { DebateArena } from "./components/DebateArena";
 
 function App() {
   return <DebateArena />;
