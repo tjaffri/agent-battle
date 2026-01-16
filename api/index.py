@@ -85,14 +85,14 @@ def get_llms():
         model="gpt-4o",
         api_key=openai_api_key,
         temperature=0.7,
-        max_tokens=512,
+        max_tokens=4096,
     )
 
     gemini_llm = ChatGoogleGenerativeAI(
         model="gemini-2.0-flash",
         google_api_key=google_api_key,
         temperature=0.7,
-        max_output_tokens=512,
+        max_output_tokens=4096,
     )
 
     return openai_llm, gemini_llm
