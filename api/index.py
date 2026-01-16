@@ -2,6 +2,7 @@
 
 import json
 import os
+import traceback
 import uuid
 from collections.abc import AsyncGenerator
 
@@ -41,7 +42,7 @@ app = FastAPI(
 # Configure CORS for Vercel
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Vercel handles this
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -60,23 +61,25 @@ def get_llms():
     google_api_key = os.environ.get("GOOGLE_API_KEY")
 
     if not openai_api_key or not google_api_key:
-        raise HTTPException(
-            status_code=503,
-            detail="API keys not configured. Set OPENAI_API_KEY and GOOGLE_API_KEY environment variables.",
-        )
+        missing = []
+        if not openai_api_key:
+            missing.append("OPENAI_API_KEY")
+        if not google_api_key:
+            missing.append("GOOGLE_API_KEY")
+        raise ValueError(f"Missing API keys: {', '.join(missing)}")
 
     openai_llm = ChatOpenAI(
         model="gpt-4o",
         api_key=openai_api_key,
         temperature=0.7,
-        max_tokens=1024,
+        max_tokens=512,
     )
 
     gemini_llm = ChatGoogleGenerativeAI(
         model="gemini-2.0-flash",
         google_api_key=google_api_key,
         temperature=0.7,
-        max_output_tokens=1024,
+        max_output_tokens=512,
     )
 
     return openai_llm, gemini_llm
@@ -86,6 +89,33 @@ def get_llms():
 async def health_check() -> HealthResponse:
     """Health check endpoint."""
     return HealthResponse(status="healthy")
+
+
+@app.get("/api/test-llm")
+async def test_llm():
+    """Test LLM connectivity."""
+    from langchain_core.messages import HumanMessage
+
+    try:
+        openai_llm, gemini_llm = get_llms()
+
+        # Test OpenAI
+        openai_response = await openai_llm.ainvoke([HumanMessage(content="Say 'OpenAI works!' in 3 words.")])
+
+        # Test Gemini
+        gemini_response = await gemini_llm.ainvoke([HumanMessage(content="Say 'Gemini works!' in 3 words.")])
+
+        return {
+            "status": "success",
+            "openai": openai_response.content,
+            "gemini": gemini_response.content,
+        }
+    except Exception as e:
+        return {
+            "status": "error",
+            "error": str(e),
+            "traceback": traceback.format_exc(),
+        }
 
 
 @app.post("/api/debate/start")
@@ -108,7 +138,10 @@ async def stream_debate(session_id: str):
     if not question:
         raise HTTPException(status_code=404, detail="Session not found")
 
-    openai_llm, gemini_llm = get_llms()
+    try:
+        openai_llm, gemini_llm = get_llms()
+    except Exception as e:
+        raise HTTPException(status_code=503, detail=str(e))
 
     async def generate_events() -> AsyncGenerator[str, None]:
         round_num = 0
@@ -140,20 +173,18 @@ async def stream_debate(session_id: str):
                         f"Please critique this response and provide your improved answer to: {question}"
                     )
 
-                # Get responses in parallel
-                openai_task = asyncio.create_task(
-                    openai_llm.ainvoke([HumanMessage(content=openai_prompt)])
-                )
-                gemini_task = asyncio.create_task(
-                    gemini_llm.ainvoke([HumanMessage(content=gemini_prompt)])
-                )
+                # Get responses sequentially to avoid issues
+                try:
+                    openai_response = await openai_llm.ainvoke([HumanMessage(content=openai_prompt)])
+                    openai_content = openai_response.content
+                except Exception as e:
+                    openai_content = f"[OpenAI Error: {str(e)}]"
 
-                openai_response, gemini_response = await asyncio.gather(
-                    openai_task, gemini_task
-                )
-
-                openai_content = openai_response.content
-                gemini_content = gemini_response.content
+                try:
+                    gemini_response = await gemini_llm.ainvoke([HumanMessage(content=gemini_prompt)])
+                    gemini_content = gemini_response.content
+                except Exception as e:
+                    gemini_content = f"[Gemini Error: {str(e)}]"
 
                 # Yield OpenAI message
                 openai_event = {
@@ -198,7 +229,7 @@ async def stream_debate(session_id: str):
         except Exception as e:
             error_event = {
                 "event_type": "error",
-                "content": str(e),
+                "content": f"{type(e).__name__}: {str(e)}",
                 "round_number": round_num,
             }
             yield f"event: error\ndata: {json.dumps(error_event)}\n\n"
