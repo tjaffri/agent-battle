@@ -2,7 +2,9 @@ import { useState, useCallback, useRef } from "react";
 import type { DebateState, Message, StreamEvent } from "@/types";
 
 // In production (Vercel), use relative /api path. In development, use localhost.
-const API_URL = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? "/api" : "http://localhost:8000");
+const API_URL =
+  import.meta.env.VITE_API_URL ||
+  (import.meta.env.PROD ? "/api" : "http://localhost:8000");
 
 const initialState: DebateState = {
   sessionId: null,

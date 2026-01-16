@@ -13,7 +13,9 @@ export function MessageBubble({ message }: MessageBubbleProps) {
     <div
       className={cn(
         "p-4 rounded border transition-all",
-        isOpenAI ? "bg-openai/5 border-openai/20" : "bg-gemini/5 border-gemini/20",
+        isOpenAI
+          ? "bg-openai/5 border-openai/20"
+          : "bg-gemini/5 border-gemini/20",
         message.isCritique && "border-l-4",
         message.isCritique && isOpenAI && "border-l-openai",
         message.isCritique && !isOpenAI && "border-l-gemini"
@@ -24,9 +26,7 @@ export function MessageBubble({ message }: MessageBubbleProps) {
         <span
           className={cn(
             "text-xs font-medium px-2.5 py-1 rounded",
-            isOpenAI
-              ? "bg-openai/10 text-openai"
-              : "bg-gemini/10 text-gemini"
+            isOpenAI ? "bg-openai/10 text-openai" : "bg-gemini/10 text-gemini"
           )}
         >
           {message.isCritique ? "Critique" : "Response"}

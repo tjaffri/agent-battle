@@ -103,7 +103,8 @@ export function ChatWindow({
                   )}
                 </div>
                 <p className="text-sm">
-                  {isOpenAI ? "GPT-4o" : "Gemini 2.0"} responses will appear here
+                  {isOpenAI ? "GPT-4o" : "Gemini 2.0"} responses will appear
+                  here
                 </p>
               </div>
             )}
