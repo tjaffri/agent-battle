@@ -1,8 +1,8 @@
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Button } from "./ui/button";
+import { Input } from "./ui/input";
 import { ChatWindow } from "./ChatWindow";
-import { useDebate } from "@/hooks/useDebate";
+import { useDebate } from "../hooks/useDebate";
 import { Send, Square, RotateCcw, Zap } from "lucide-react";
 
 export function DebateArena() {
