@@ -12,6 +12,19 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
 
+# Configure LangSmith tracing
+def setup_langsmith():
+    """Configure LangSmith tracing from environment variables."""
+    langsmith_api_key = os.environ.get("LANGSMITH_API_KEY")
+    if langsmith_api_key:
+        os.environ["LANGCHAIN_TRACING_V2"] = "true"
+        os.environ["LANGCHAIN_API_KEY"] = langsmith_api_key
+        os.environ["LANGCHAIN_PROJECT"] = os.environ.get("LANGSMITH_PROJECT", "agent-battle")
+
+
+setup_langsmith()
+
+
 # Models
 class DebateRequest(BaseModel):
     question: str
