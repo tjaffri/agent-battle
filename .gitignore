@@ -82,3 +82,4 @@ test-results/
 *.bak
 *.tmp
 .playwright-mcp/
+.vercel
