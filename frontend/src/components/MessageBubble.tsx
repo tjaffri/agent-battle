@@ -33,7 +33,8 @@ export function MessageBubble({ message }: MessageBubbleProps) {
         "p-4 rounded border transition-all",
         providerBgStyles[provider],
         message.isCritique && "border-l-4",
-        message.isCritique && providerBorderStyles[provider]
+        message.isCritique && providerBorderStyles[provider],
+        message.isStreaming && "ring-1 ring-offset-1 ring-primary/30"
       )}
       data-testid={`message-${message.id}`}
     >
@@ -49,9 +50,17 @@ export function MessageBubble({ message }: MessageBubbleProps) {
         <span className="text-xs text-muted-foreground font-medium">
           Round {message.roundNumber + 1}
         </span>
+        {message.isStreaming && (
+          <span className="text-xs text-muted-foreground animate-pulse">
+            streaming...
+          </span>
+        )}
       </div>
       <div className="prose prose-sm max-w-none text-foreground prose-headings:text-foreground prose-strong:text-foreground prose-p:my-2 prose-ul:my-2 prose-ol:my-2 prose-li:my-0.5">
         <ReactMarkdown>{message.content}</ReactMarkdown>
+        {message.isStreaming && (
+          <span className="inline-block w-2 h-4 bg-foreground/70 animate-pulse ml-0.5" />
+        )}
       </div>
     </div>
   );

@@ -156,9 +156,20 @@ class HealthResponse(BaseModel):
 
 
 class StreamEvent(BaseModel):
-    """Event sent via SSE stream."""
+    """Event sent via SSE stream.
 
-    event_type: str  # "round_start", "message", "round_end", "debate_end", "error"
+    Event types:
+    - round_start: Start of a new debate round
+    - stream_start: Start of a model's response (for streaming)
+    - stream_chunk: Partial content from a streaming response
+    - stream_end: End of a model's streaming response
+    - message: Complete message (non-streaming mode)
+    - round_end: End of a debate round
+    - debate_end: Debate has completed
+    - error: An error occurred
+    """
+
+    event_type: str
     provider: LLMProvider | None = None
     content: str = ""
     message_id: str | None = None
