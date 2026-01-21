@@ -58,6 +58,10 @@
     /* Gemini Blue */
     --gemini: 217 91% 60%;
     --gemini-foreground: 0 0% 100%;
+
+    /* Anthropic Orange/Coral */
+    --anthropic: 16 84% 60%;
+    --anthropic-foreground: 0 0% 100%;
   }
 
   .dark {
@@ -101,6 +105,9 @@
 
     --gemini: 217 91% 65%;
     --gemini-foreground: 0 0% 100%;
+
+    --anthropic: 16 84% 65%;
+    --anthropic-foreground: 0 0% 100%;
   }
 }
 

@@ -1,10 +1,25 @@
 import { useState, useCallback, useRef } from "react";
-import type { DebateState, Message, StreamEvent } from "../types";
+import type {
+  DebateState,
+  DebateConfig,
+  DebateRequest,
+  DebateResponse,
+  Message,
+  StreamEvent,
+} from "../types";
 
 // In production (Vercel), use relative /api path. In development, use localhost.
 const API_URL =
   import.meta.env.VITE_API_URL ||
   (import.meta.env.PROD ? "/api" : "http://localhost:8000");
+
+const defaultConfig: DebateConfig = {
+  maxRounds: 2,
+  models: [
+    { provider: "openai", model_id: "gpt-4.1" },
+    { provider: "gemini", model_id: "gemini-2.5-flash" },
+  ],
+};
 
 const initialState: DebateState = {
   sessionId: null,
@@ -12,7 +27,9 @@ const initialState: DebateState = {
   messages: [],
   isActive: false,
   roundNumber: 0,
+  maxRounds: 2,
   error: null,
+  config: defaultConfig,
 };
 
 export function useDebate() {
@@ -28,17 +45,20 @@ export function useDebate() {
         timestamp: new Date(),
         isCritique: event.round_number > 0,
         roundNumber: event.round_number,
+        modelId: event.model_id,
       };
 
       setState((prev) => ({
         ...prev,
         messages: [...prev.messages, newMessage],
         roundNumber: event.round_number,
+        maxRounds: event.max_rounds ?? prev.maxRounds,
       }));
     } else if (event.event_type === "round_start") {
       setState((prev) => ({
         ...prev,
         roundNumber: event.round_number,
+        maxRounds: event.max_rounds ?? prev.maxRounds,
       }));
     } else if (event.event_type === "debate_end") {
       setState((prev) => ({
@@ -54,37 +74,61 @@ export function useDebate() {
     }
   }, []);
 
+  const updateConfig = useCallback((config: DebateConfig) => {
+    setState((prev) => ({
+      ...prev,
+      config,
+      maxRounds: config.maxRounds,
+    }));
+  }, []);
+
   const startDebate = useCallback(
-    async (question: string) => {
+    async (question: string, config?: DebateConfig) => {
+      const debateConfig = config || state.config;
+
       try {
         // Reset state and start new debate
         setState({
           ...initialState,
           question,
           isActive: true,
+          config: debateConfig,
+          maxRounds: debateConfig.maxRounds,
         });
+
+        // Build request
+        const debateRequest: DebateRequest = {
+          question,
+          max_rounds: debateConfig.maxRounds,
+          models: debateConfig.models,
+        };
 
         // Start debate session
         const response = await fetch(`${API_URL}/debate/start`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ question }),
+          body: JSON.stringify(debateRequest),
         });
 
         if (!response.ok) {
           throw new Error("Failed to start debate");
         }
 
-        const { session_id } = await response.json();
+        const data: DebateResponse = await response.json();
 
         setState((prev) => ({
           ...prev,
-          sessionId: session_id,
+          sessionId: data.session_id,
+          maxRounds: data.max_rounds,
+          config: {
+            maxRounds: data.max_rounds,
+            models: data.models,
+          },
         }));
 
         // Connect to SSE stream
         const eventSource = new EventSource(
-          `${API_URL}/debate/${session_id}/stream`
+          `${API_URL}/debate/${data.session_id}/stream`
         );
         eventSourceRef.current = eventSource;
 
@@ -135,7 +179,7 @@ export function useDebate() {
         }));
       }
     },
-    [handleStreamEvent]
+    [handleStreamEvent, state.config]
   );
 
   const stopDebate = useCallback(async () => {
@@ -163,5 +207,6 @@ export function useDebate() {
     startDebate,
     stopDebate,
     resetDebate,
+    updateConfig,
   };
 }

@@ -67,6 +67,10 @@ export default {
           DEFAULT: 'hsl(var(--gemini))',
           foreground: 'hsl(var(--gemini-foreground))',
         },
+        anthropic: {
+          DEFAULT: 'hsl(var(--anthropic))',
+          foreground: 'hsl(var(--anthropic-foreground))',
+        },
       },
     },
   },

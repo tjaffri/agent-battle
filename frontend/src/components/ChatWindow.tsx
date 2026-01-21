@@ -4,7 +4,37 @@ import { ScrollArea } from "./ui/scroll-area";
 import { MessageBubble } from "./MessageBubble";
 import type { Message, LLMProvider } from "../types";
 import { cn } from "../lib/utils";
-import { Sparkles, Bot } from "lucide-react";
+import { Sparkles, Bot, Brain } from "lucide-react";
+
+const providerIcons: Record<LLMProvider, typeof Bot> = {
+  openai: Bot,
+  gemini: Sparkles,
+  anthropic: Brain,
+};
+
+const providerColors: Record<LLMProvider, string> = {
+  openai: "bg-openai",
+  gemini: "bg-gemini",
+  anthropic: "bg-anthropic",
+};
+
+const providerBgColors: Record<LLMProvider, string> = {
+  openai: "bg-openai/5",
+  gemini: "bg-gemini/5",
+  anthropic: "bg-anthropic/5",
+};
+
+const providerBorderColors: Record<LLMProvider, string> = {
+  openai: "border-openai/20",
+  gemini: "border-gemini/20",
+  anthropic: "border-anthropic/20",
+};
+
+const providerTextColors: Record<LLMProvider, string> = {
+  openai: "text-openai",
+  gemini: "text-gemini",
+  anthropic: "text-anthropic",
+};
 
 interface ChatWindowProps {
   provider: LLMProvider;
@@ -21,7 +51,7 @@ export function ChatWindow({
 }: ChatWindowProps) {
   const filteredMessages = messages.filter((m) => m.provider === provider);
   const scrollRef = useRef<HTMLDivElement>(null);
-  const isOpenAI = provider === "openai";
+  const IconComponent = providerIcons[provider] || Bot;
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
@@ -35,21 +65,17 @@ export function ChatWindow({
       <CardHeader
         className={cn(
           "pb-3 flex-shrink-0 border-b border-border",
-          isOpenAI ? "bg-openai/5" : "bg-gemini/5"
+          providerBgColors[provider]
         )}
       >
         <CardTitle className="flex items-center gap-2 text-base font-medium">
           <div
             className={cn(
               "w-8 h-8 rounded flex items-center justify-center",
-              isOpenAI ? "bg-openai" : "bg-gemini"
+              providerColors[provider]
             )}
           >
-            {isOpenAI ? (
-              <Bot className="w-4 h-4 text-white" />
-            ) : (
-              <Sparkles className="w-4 h-4 text-white" />
-            )}
+            <IconComponent className="w-4 h-4 text-white" />
           </div>
           <span className="text-foreground">{title}</span>
           {isActive && (
@@ -58,13 +84,13 @@ export function ChatWindow({
                 <span
                   className={cn(
                     "animate-ping absolute inline-flex h-full w-full rounded-full opacity-75",
-                    isOpenAI ? "bg-openai" : "bg-gemini"
+                    providerColors[provider]
                   )}
                 ></span>
                 <span
                   className={cn(
                     "relative inline-flex rounded-full h-2 w-2",
-                    isOpenAI ? "bg-openai" : "bg-gemini"
+                    providerColors[provider]
                   )}
                 ></span>
               </span>
@@ -83,29 +109,14 @@ export function ChatWindow({
                 <div
                   className={cn(
                     "w-12 h-12 rounded mx-auto mb-3 flex items-center justify-center opacity-50",
-                    isOpenAI ? "bg-openai/10" : "bg-gemini/10"
+                    providerBgColors[provider]
                   )}
                 >
-                  {isOpenAI ? (
-                    <Bot
-                      className={cn(
-                        "w-6 h-6",
-                        isOpenAI ? "text-openai" : "text-gemini"
-                      )}
-                    />
-                  ) : (
-                    <Sparkles
-                      className={cn(
-                        "w-6 h-6",
-                        isOpenAI ? "text-openai" : "text-gemini"
-                      )}
-                    />
-                  )}
+                  <IconComponent
+                    className={cn("w-6 h-6", providerTextColors[provider])}
+                  />
                 </div>
-                <p className="text-sm">
-                  {isOpenAI ? "GPT-4o" : "Gemini 2.0"} responses will appear
-                  here
-                </p>
+                <p className="text-sm">{title} responses will appear here</p>
               </div>
             )}
             {filteredMessages.map((message) => (
@@ -115,9 +126,8 @@ export function ChatWindow({
               <div
                 className={cn(
                   "p-4 rounded border animate-thinking",
-                  isOpenAI
-                    ? "bg-openai/5 border-openai/20"
-                    : "bg-gemini/5 border-gemini/20"
+                  providerBgColors[provider],
+                  providerBorderColors[provider]
                 )}
               >
                 <div className="flex items-center gap-3">
@@ -125,21 +135,21 @@ export function ChatWindow({
                     <span
                       className={cn(
                         "w-2 h-2 rounded-full animate-bounce",
-                        isOpenAI ? "bg-openai" : "bg-gemini"
+                        providerColors[provider]
                       )}
                       style={{ animationDelay: "0ms" }}
                     ></span>
                     <span
                       className={cn(
                         "w-2 h-2 rounded-full animate-bounce",
-                        isOpenAI ? "bg-openai" : "bg-gemini"
+                        providerColors[provider]
                       )}
                       style={{ animationDelay: "150ms" }}
                     ></span>
                     <span
                       className={cn(
                         "w-2 h-2 rounded-full animate-bounce",
-                        isOpenAI ? "bg-openai" : "bg-gemini"
+                        providerColors[provider]
                       )}
                       style={{ animationDelay: "300ms" }}
                     ></span>
