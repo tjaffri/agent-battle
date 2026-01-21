@@ -1,18 +1,48 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { ChatWindow } from "./ChatWindow";
+import { DebateSettings } from "./DebateSettings";
 import { useDebate } from "../hooks/useDebate";
 import { Send, Square, RotateCcw, Zap } from "lucide-react";
+import type { LLMProvider } from "../types";
+
+// Model display names - Updated January 2025
+const MODEL_NAMES: Record<string, string> = {
+  // OpenAI
+  o3: "o3",
+  "o4-mini": "o4-mini",
+  "gpt-4.1": "GPT-4.1",
+  "gpt-4.1-mini": "GPT-4.1 Mini",
+  "gpt-4o": "GPT-4o",
+  // Gemini
+  "gemini-2.5-pro": "Gemini 2.5 Pro",
+  "gemini-2.5-flash": "Gemini 2.5 Flash",
+  "gemini-2.0-flash": "Gemini 2.0 Flash",
+  // Anthropic
+  "claude-opus-4-5-20251124": "Claude Opus 4.5",
+  "claude-sonnet-4-5-20250929": "Claude Sonnet 4.5",
+  "claude-haiku-4-5-20251015": "Claude Haiku 4.5",
+};
 
 export function DebateArena() {
   const [question, setQuestion] = useState("");
-  const { state, startDebate, stopDebate, resetDebate } = useDebate();
+  const { state, startDebate, stopDebate, resetDebate, updateConfig } =
+    useDebate();
+
+  // Get the model names for display
+  const modelDisplayInfo = useMemo(() => {
+    return state.config.models.map((m) => ({
+      provider: m.provider as LLMProvider,
+      modelId: m.model_id,
+      name: MODEL_NAMES[m.model_id] || m.model_id,
+    }));
+  }, [state.config.models]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (question.trim() && !state.isActive) {
-      startDebate(question.trim());
+      startDebate(question.trim(), state.config);
     }
   };
 
@@ -35,7 +65,8 @@ export function DebateArena() {
                 Agent Battle
               </h1>
               <p className="text-sm text-white/70">
-                GPT-4o vs Gemini 2.0 — AI Debate Arena
+                {modelDisplayInfo[0]?.name || "GPT-4o"} vs{" "}
+                {modelDisplayInfo[1]?.name || "Gemini 2.0"} — AI Debate Arena
               </p>
             </div>
           </div>
@@ -43,7 +74,10 @@ export function DebateArena() {
             <div className="flex items-center gap-6">
               <div className="text-right">
                 <p className="text-2xl font-semibold">
-                  Round {state.roundNumber + 1}
+                  Round {state.roundNumber + 1}{" "}
+                  <span className="text-lg text-white/60">
+                    / {state.maxRounds}
+                  </span>
                 </p>
                 <p className="text-sm text-white/60">
                   {state.messages.length} messages
@@ -63,7 +97,7 @@ export function DebateArena() {
           <Input
             value={question}
             onChange={(e) => setQuestion(e.target.value)}
-            placeholder="Ask a question to start the debate between GPT-4o and Gemini..."
+            placeholder={`Ask a question to start the debate between ${modelDisplayInfo[0]?.name || "AI 1"} and ${modelDisplayInfo[1]?.name || "AI 2"}...`}
             disabled={state.isActive}
             className="flex-1 h-12 text-base border-border focus:border-primary focus:ring-primary"
             data-testid="question-input"
@@ -122,20 +156,28 @@ export function DebateArena() {
             </p>
           </div>
         )}
+        {/* Settings Panel */}
+        <div className="max-w-4xl mx-auto mt-4">
+          <DebateSettings
+            config={state.config}
+            onConfigChange={updateConfig}
+            disabled={state.isActive}
+          />
+        </div>
       </div>
 
       {/* Side-by-side Chat Windows */}
       <div className="flex-1 grid grid-cols-2 gap-4 p-4 bg-background min-h-0 overflow-hidden">
         <ChatWindow
-          provider="openai"
+          provider={modelDisplayInfo[0]?.provider || "openai"}
           messages={state.messages}
-          title="GPT-4o"
+          title={modelDisplayInfo[0]?.name || "GPT-4o"}
           isActive={state.isActive}
         />
         <ChatWindow
-          provider="gemini"
+          provider={modelDisplayInfo[1]?.provider || "gemini"}
           messages={state.messages}
-          title="Gemini 2.0"
+          title={modelDisplayInfo[1]?.name || "Gemini 2.0"}
           isActive={state.isActive}
         />
       </div>
@@ -144,19 +186,17 @@ export function DebateArena() {
       <footer className="bg-card border-t border-border px-6 py-3 text-center text-sm text-muted-foreground">
         <p>
           Powered by{" "}
-          <a
-            href="https://openai.com"
-            className="font-medium text-openai hover:underline"
+          <span
+            className={`font-medium text-${modelDisplayInfo[0]?.provider || "openai"}`}
           >
-            OpenAI GPT-4o
-          </a>{" "}
+            {modelDisplayInfo[0]?.name || "GPT-4o"}
+          </span>{" "}
           &{" "}
-          <a
-            href="https://deepmind.google/technologies/gemini/"
-            className="font-medium text-gemini hover:underline"
+          <span
+            className={`font-medium text-${modelDisplayInfo[1]?.provider || "gemini"}`}
           >
-            Google Gemini 2.0
-          </a>{" "}
+            {modelDisplayInfo[1]?.name || "Gemini 2.0"}
+          </span>{" "}
           | Built with LangGraph
         </p>
       </footer>

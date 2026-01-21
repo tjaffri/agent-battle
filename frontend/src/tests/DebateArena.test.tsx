@@ -1,12 +1,24 @@
-import { describe, it, expect, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { DebateArena } from "../components/DebateArena";
 
 // Mock fetch
-global.fetch = vi.fn();
+const mockFetch = vi.fn();
+global.fetch = mockFetch;
 
 describe("DebateArena", () => {
+  beforeEach(() => {
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: () =>
+        Promise.resolve({
+          models: {},
+          available_providers: [],
+        }),
+    });
+  });
+
   it("renders the header with correct title", () => {
     render(<DebateArena />);
     expect(screen.getByText("Agent Battle")).toBeInTheDocument();
@@ -18,10 +30,15 @@ describe("DebateArena", () => {
     expect(screen.getByTestId("start-button")).toBeInTheDocument();
   });
 
-  it("renders both chat windows with correct titles", () => {
+  it("renders both chat windows with correct titles", async () => {
     render(<DebateArena />);
-    expect(screen.getByText("GPT-4o")).toBeInTheDocument();
-    expect(screen.getByText("Gemini 2.0")).toBeInTheDocument();
+    // Use getAllByText since the model names appear in multiple places
+    await waitFor(() => {
+      const gpt4Elements = screen.getAllByText("GPT-4.1");
+      expect(gpt4Elements.length).toBeGreaterThan(0);
+    });
+    const geminiElements = screen.getAllByText(/Gemini 2\.5 Flash/);
+    expect(geminiElements.length).toBeGreaterThan(0);
   });
 
   it("disables start button when question is empty", () => {

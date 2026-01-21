@@ -13,15 +13,21 @@ from sse_starlette.sse import EventSourceResponse
 from .config import get_settings
 from .graph import DebateGraph
 from .models import (
+    AVAILABLE_MODELS,
+    AvailableModelsResponse,
     DebateRequest,
     DebateResponse,
     HealthResponse,
+    LLMProvider,
+    ModelInfo,
+    SelectedModel,
     StopResponse,
 )
 
 # Global state
 debate_graph: DebateGraph | None = None
-active_sessions: dict[str, str] = {}  # session_id -> question
+# session_id -> {question, max_rounds, models}
+active_sessions: dict[str, dict] = {}
 
 
 @asynccontextmanager
@@ -78,15 +84,69 @@ async def health_check() -> HealthResponse:
     return HealthResponse(status="healthy")
 
 
+@app.get("/models", response_model=AvailableModelsResponse)
+async def get_available_models() -> AvailableModelsResponse:
+    """Get available models based on configured API keys."""
+    settings = get_settings()
+
+    available_providers = []
+    models: dict[str, list[ModelInfo]] = {}
+
+    # Check which providers have API keys configured
+    if settings.openai_api_key:
+        available_providers.append("openai")
+        models["openai"] = [
+            ModelInfo(provider=LLMProvider.OPENAI, **m)
+            for m in AVAILABLE_MODELS["openai"]
+        ]
+
+    if settings.google_api_key:
+        available_providers.append("gemini")
+        models["gemini"] = [
+            ModelInfo(provider=LLMProvider.GEMINI, **m)
+            for m in AVAILABLE_MODELS["gemini"]
+        ]
+
+    if settings.anthropic_api_key:
+        available_providers.append("anthropic")
+        models["anthropic"] = [
+            ModelInfo(provider=LLMProvider.ANTHROPIC, **m)
+            for m in AVAILABLE_MODELS["anthropic"]
+        ]
+
+    return AvailableModelsResponse(
+        models=models, available_providers=available_providers
+    )
+
+
 @app.post("/debate/start", response_model=DebateResponse)
 async def start_debate(request: DebateRequest) -> DebateResponse:
     """Start a new debate session."""
     session_id = request.session_id or str(uuid.uuid4())
 
-    # Store the session
-    active_sessions[session_id] = request.question
+    # Default models if not specified
+    if request.models is None or len(request.models) < 2:
+        default_models = [
+            SelectedModel(provider=LLMProvider.OPENAI, model_id="gpt-4.1"),
+            SelectedModel(provider=LLMProvider.GEMINI, model_id="gemini-2.5-flash"),
+        ]
+        models = default_models
+    else:
+        models = request.models
 
-    return DebateResponse(session_id=session_id, question=request.question)
+    # Store the session config
+    active_sessions[session_id] = {
+        "question": request.question,
+        "max_rounds": request.max_rounds,
+        "models": models,
+    }
+
+    return DebateResponse(
+        session_id=session_id,
+        question=request.question,
+        max_rounds=request.max_rounds,
+        models=models,
+    )
 
 
 @app.get("/debate/{session_id}/stream")
@@ -98,10 +158,15 @@ async def stream_debate(session_id: str) -> EventSourceResponse:
     if debate_graph is None:
         raise HTTPException(status_code=503, detail="Service not initialized")
 
-    question = active_sessions[session_id]
+    session_config = active_sessions[session_id]
+    question = session_config["question"]
+    max_rounds = session_config["max_rounds"]
+    models = session_config["models"]
 
     async def event_generator() -> AsyncGenerator[dict, None]:
-        async for event in debate_graph.run_debate(session_id, question):
+        async for event in debate_graph.run_debate(
+            session_id, question, max_rounds=max_rounds, models=models
+        ):
             yield {
                 "event": event.event_type,
                 "data": json.dumps(event.model_dump()),

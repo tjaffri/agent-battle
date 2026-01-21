@@ -18,6 +18,7 @@ class Settings(BaseSettings):
     # API Keys
     openai_api_key: str = ""
     google_api_key: str = ""
+    anthropic_api_key: str = ""
 
     # LangSmith
     langsmith_api_key: str = ""

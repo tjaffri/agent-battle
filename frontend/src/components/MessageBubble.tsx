@@ -1,24 +1,39 @@
 import ReactMarkdown from "react-markdown";
 import { cn } from "../lib/utils";
-import type { Message } from "../types";
+import type { Message, LLMProvider } from "../types";
 
 interface MessageBubbleProps {
   message: Message;
 }
 
+const providerBgStyles: Record<LLMProvider, string> = {
+  openai: "bg-openai/5 border-openai/20",
+  gemini: "bg-gemini/5 border-gemini/20",
+  anthropic: "bg-anthropic/5 border-anthropic/20",
+};
+
+const providerBorderStyles: Record<LLMProvider, string> = {
+  openai: "border-l-openai",
+  gemini: "border-l-gemini",
+  anthropic: "border-l-anthropic",
+};
+
+const providerBadgeStyles: Record<LLMProvider, string> = {
+  openai: "bg-openai/10 text-openai",
+  gemini: "bg-gemini/10 text-gemini",
+  anthropic: "bg-anthropic/10 text-anthropic",
+};
+
 export function MessageBubble({ message }: MessageBubbleProps) {
-  const isOpenAI = message.provider === "openai";
+  const provider = message.provider;
 
   return (
     <div
       className={cn(
         "p-4 rounded border transition-all",
-        isOpenAI
-          ? "bg-openai/5 border-openai/20"
-          : "bg-gemini/5 border-gemini/20",
+        providerBgStyles[provider],
         message.isCritique && "border-l-4",
-        message.isCritique && isOpenAI && "border-l-openai",
-        message.isCritique && !isOpenAI && "border-l-gemini"
+        message.isCritique && providerBorderStyles[provider]
       )}
       data-testid={`message-${message.id}`}
     >
@@ -26,7 +41,7 @@ export function MessageBubble({ message }: MessageBubbleProps) {
         <span
           className={cn(
             "text-xs font-medium px-2.5 py-1 rounded",
-            isOpenAI ? "bg-openai/10 text-openai" : "bg-gemini/10 text-gemini"
+            providerBadgeStyles[provider]
           )}
         >
           {message.isCritique ? "Critique" : "Response"}

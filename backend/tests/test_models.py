@@ -7,6 +7,7 @@ from app.models import (
     DebateResponse,
     LLMProvider,
     Message,
+    SelectedModel,
     StreamEvent,
 )
 
@@ -15,6 +16,7 @@ def test_llm_provider_enum():
     """Test LLMProvider enum values."""
     assert LLMProvider.OPENAI == "openai"
     assert LLMProvider.GEMINI == "gemini"
+    assert LLMProvider.ANTHROPIC == "anthropic"
 
 
 def test_message_creation():
@@ -52,6 +54,8 @@ def test_debate_request():
     request = DebateRequest(question="What is AI?")
     assert request.question == "What is AI?"
     assert request.session_id is None
+    assert request.max_rounds == 2  # Default value
+    assert request.models is None  # Default value
 
 
 def test_debate_request_with_session():
@@ -60,11 +64,40 @@ def test_debate_request_with_session():
     assert request.session_id == "custom-session"
 
 
+def test_debate_request_with_config():
+    """Test DebateRequest with custom configuration."""
+    models = [
+        SelectedModel(provider=LLMProvider.OPENAI, model_id="gpt-4.1"),
+        SelectedModel(
+            provider=LLMProvider.ANTHROPIC, model_id="claude-sonnet-4-5-20250929"
+        ),
+    ]
+    request = DebateRequest(
+        question="What is AI?",
+        max_rounds=10,
+        models=models,
+    )
+    assert request.max_rounds == 10
+    assert len(request.models) == 2
+    assert request.models[1].provider == LLMProvider.ANTHROPIC
+
+
 def test_debate_response():
     """Test DebateResponse model."""
-    response = DebateResponse(session_id="sess-123", question="What is AI?")
+    models = [
+        SelectedModel(provider=LLMProvider.OPENAI, model_id="gpt-4.1"),
+        SelectedModel(provider=LLMProvider.GEMINI, model_id="gemini-2.5-flash"),
+    ]
+    response = DebateResponse(
+        session_id="sess-123",
+        question="What is AI?",
+        max_rounds=5,
+        models=models,
+    )
     assert response.session_id == "sess-123"
     assert response.question == "What is AI?"
+    assert response.max_rounds == 5
+    assert len(response.models) == 2
 
 
 def test_stream_event():
