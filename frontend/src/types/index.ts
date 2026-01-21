@@ -44,8 +44,27 @@ export interface DebateState {
   config: DebateConfig;
 }
 
+/**
+ * Event types:
+ * - round_start: Start of a new debate round
+ * - stream_start: Start of a model's streaming response
+ * - stream_chunk: Partial content from a streaming response
+ * - stream_end: End of a model's streaming response
+ * - message: Complete message (non-streaming, legacy)
+ * - round_end: End of a debate round
+ * - debate_end: Debate has completed
+ * - error: An error occurred
+ */
 export interface StreamEvent {
-  event_type: string;
+  event_type:
+    | "round_start"
+    | "stream_start"
+    | "stream_chunk"
+    | "stream_end"
+    | "message"
+    | "round_end"
+    | "debate_end"
+    | "error";
   provider?: LLMProvider;
   content: string;
   message_id?: string;

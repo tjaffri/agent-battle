@@ -37,7 +37,53 @@ export function useDebate() {
   const eventSourceRef = useRef<EventSource | null>(null);
 
   const handleStreamEvent = useCallback((event: StreamEvent) => {
-    if (event.event_type === "message" && event.provider && event.content) {
+    if (
+      event.event_type === "stream_start" &&
+      event.provider &&
+      event.message_id
+    ) {
+      // Create a new message with empty content and isStreaming=true
+      const newMessage: Message = {
+        id: event.message_id,
+        provider: event.provider,
+        content: "",
+        timestamp: new Date(),
+        isCritique: event.round_number > 0,
+        roundNumber: event.round_number,
+        modelId: event.model_id,
+        isStreaming: true,
+      };
+
+      setState((prev) => ({
+        ...prev,
+        messages: [...prev.messages, newMessage],
+        roundNumber: event.round_number,
+        maxRounds: event.max_rounds ?? prev.maxRounds,
+      }));
+    } else if (event.event_type === "stream_chunk" && event.message_id) {
+      // Append the chunk to the existing message
+      setState((prev) => ({
+        ...prev,
+        messages: prev.messages.map((msg) =>
+          msg.id === event.message_id
+            ? { ...msg, content: msg.content + event.content }
+            : msg
+        ),
+      }));
+    } else if (event.event_type === "stream_end" && event.message_id) {
+      // Mark the message as no longer streaming
+      setState((prev) => ({
+        ...prev,
+        messages: prev.messages.map((msg) =>
+          msg.id === event.message_id ? { ...msg, isStreaming: false } : msg
+        ),
+      }));
+    } else if (
+      event.event_type === "message" &&
+      event.provider &&
+      event.content
+    ) {
+      // Legacy support for non-streaming messages
       const newMessage: Message = {
         id: event.message_id || crypto.randomUUID(),
         provider: event.provider,
@@ -132,12 +178,41 @@ export function useDebate() {
         );
         eventSourceRef.current = eventSource;
 
+        // Generic message handler (SSE default event)
         eventSource.addEventListener("message", (event) => {
           try {
             const data: StreamEvent = JSON.parse(event.data);
             handleStreamEvent(data);
           } catch (e) {
             console.error("Failed to parse event:", e);
+          }
+        });
+
+        // Streaming events
+        eventSource.addEventListener("stream_start", (event) => {
+          try {
+            const data: StreamEvent = JSON.parse(event.data);
+            handleStreamEvent(data);
+          } catch (e) {
+            console.error("Failed to parse stream_start:", e);
+          }
+        });
+
+        eventSource.addEventListener("stream_chunk", (event) => {
+          try {
+            const data: StreamEvent = JSON.parse(event.data);
+            handleStreamEvent(data);
+          } catch (e) {
+            console.error("Failed to parse stream_chunk:", e);
+          }
+        });
+
+        eventSource.addEventListener("stream_end", (event) => {
+          try {
+            const data: StreamEvent = JSON.parse(event.data);
+            handleStreamEvent(data);
+          } catch (e) {
+            console.error("Failed to parse stream_end:", e);
           }
         });
 

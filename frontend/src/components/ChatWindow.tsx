@@ -53,12 +53,17 @@ export function ChatWindow({
   const scrollRef = useRef<HTMLDivElement>(null);
   const IconComponent = providerIcons[provider] || Bot;
 
-  // Auto-scroll to bottom when new messages arrive
+  // Check if there's an actively streaming message
+  const streamingMessage = filteredMessages.find((m) => m.isStreaming);
+  const lastMessageContent =
+    filteredMessages[filteredMessages.length - 1]?.content;
+
+  // Auto-scroll to bottom when new messages arrive or content streams
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [filteredMessages]);
+  }, [filteredMessages.length, lastMessageContent, streamingMessage?.id]);
 
   return (
     <Card className="flex flex-col h-full overflow-hidden border-border">
@@ -78,7 +83,7 @@ export function ChatWindow({
             <IconComponent className="w-4 h-4 text-white" />
           </div>
           <span className="text-foreground">{title}</span>
-          {isActive && (
+          {(isActive || streamingMessage) && (
             <span className="ml-auto flex items-center gap-2">
               <span className="relative flex h-2 w-2">
                 <span
@@ -95,7 +100,7 @@ export function ChatWindow({
                 ></span>
               </span>
               <span className="text-xs text-muted-foreground font-normal">
-                Thinking...
+                {streamingMessage ? "Streaming..." : "Waiting..."}
               </span>
             </span>
           )}
@@ -122,7 +127,7 @@ export function ChatWindow({
             {filteredMessages.map((message) => (
               <MessageBubble key={message.id} message={message} />
             ))}
-            {isActive && filteredMessages.length > 0 && (
+            {isActive && filteredMessages.length > 0 && !streamingMessage && (
               <div
                 className={cn(
                   "p-4 rounded border animate-thinking",
@@ -155,7 +160,7 @@ export function ChatWindow({
                     ></span>
                   </div>
                   <span className="text-sm text-muted-foreground">
-                    Generating response...
+                    Waiting for next turn...
                   </span>
                 </div>
               </div>

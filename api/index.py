@@ -290,6 +290,93 @@ async def stream_debate(session_id: str):
     except Exception as e:
         raise HTTPException(status_code=503, detail=str(e))
 
+    def build_prompt(
+        model_index: int,
+        round_num: int,
+        latest_responses: dict[str, str],
+    ) -> str:
+        """Build the prompt for a model based on the round."""
+        if round_num == 0:
+            return question
+
+        # Get the other model's response to critique
+        other_index = (model_index + 1) % len(llms)
+        other_model = llms[other_index][0]
+        other_name = get_model_display_name(
+            other_model.provider.value, other_model.model_id
+        )
+        other_key = f"{other_model.provider.value}_{other_model.model_id}"
+        other_response = latest_responses.get(other_key, "")
+
+        return (
+            f'The other AI ({other_name}) responded:\n\n"{other_response}"\n\n'
+            f"Please critique this response, point out any flaws or "
+            f"missing perspectives, and provide your improved answer "
+            f"to the original question: {question}"
+        )
+
+    async def stream_model_response(
+        llm,
+        prompt: str,
+        selected_model: SelectedModel,
+        round_num: int,
+    ) -> AsyncGenerator[tuple[str, str], None]:
+        """Stream a single model's response, yielding (event_type, json_data) tuples."""
+        message_id = str(uuid.uuid4())
+
+        # Signal stream start
+        start_event = {
+            "event_type": "stream_start",
+            "provider": selected_model.provider.value,
+            "content": "",
+            "message_id": message_id,
+            "round_number": round_num,
+            "max_rounds": max_rounds,
+            "model_id": selected_model.model_id,
+        }
+        yield ("stream_start", json.dumps(start_event))
+
+        full_content = ""
+        try:
+            async for chunk in llm.astream([HumanMessage(content=prompt)]):
+                chunk_content = chunk.content if hasattr(chunk, "content") else str(chunk)
+                if chunk_content:
+                    full_content += chunk_content
+                    chunk_event = {
+                        "event_type": "stream_chunk",
+                        "provider": selected_model.provider.value,
+                        "content": chunk_content,
+                        "message_id": message_id,
+                        "round_number": round_num,
+                        "max_rounds": max_rounds,
+                        "model_id": selected_model.model_id,
+                    }
+                    yield ("stream_chunk", json.dumps(chunk_event))
+        except Exception as e:
+            full_content = f"[Error: {str(e)}]"
+            error_chunk = {
+                "event_type": "stream_chunk",
+                "provider": selected_model.provider.value,
+                "content": full_content,
+                "message_id": message_id,
+                "round_number": round_num,
+                "max_rounds": max_rounds,
+                "model_id": selected_model.model_id,
+            }
+            yield ("stream_chunk", json.dumps(error_chunk))
+
+        # Signal stream end with full content
+        end_event = {
+            "event_type": "stream_end",
+            "provider": selected_model.provider.value,
+            "content": full_content,
+            "message_id": message_id,
+            "round_number": round_num,
+            "max_rounds": max_rounds,
+            "model_id": selected_model.model_id,
+        }
+        yield ("stream_end", json.dumps(end_event))
+
     async def generate_events() -> AsyncGenerator[str, None]:
         round_num = 0
         latest_responses: dict[str, str] = {}
@@ -305,53 +392,25 @@ async def stream_debate(session_id: str):
                 }
                 yield f"event: round_start\ndata: {json.dumps(event)}\n\n"
 
-                # Get responses from each model
+                # Stream responses from each model sequentially
                 for i, (selected_model, llm) in enumerate(llms):
                     model_key = f"{selected_model.provider.value}_{selected_model.model_id}"
-                    model_name = get_model_display_name(
-                        selected_model.provider.value, selected_model.model_id
-                    )
 
-                    # Prepare prompt
-                    if round_num == 0:
-                        prompt = question
-                    else:
-                        # Get the other model's response to critique
-                        other_index = (i + 1) % len(llms)
-                        other_model = llms[other_index][0]
-                        other_name = get_model_display_name(
-                            other_model.provider.value, other_model.model_id
-                        )
-                        other_key = f"{other_model.provider.value}_{other_model.model_id}"
-                        other_response = latest_responses.get(other_key, "")
+                    # Build the prompt for this model
+                    prompt = build_prompt(i, round_num, latest_responses)
 
-                        prompt = (
-                            f'The other AI ({other_name}) responded:\n\n"{other_response}"\n\n'
-                            f"Please critique this response and provide your improved answer to: {question}"
-                        )
+                    # Stream the response
+                    full_content = ""
+                    async for event_type, event_data in stream_model_response(
+                        llm, prompt, selected_model, round_num
+                    ):
+                        yield f"event: {event_type}\ndata: {event_data}\n\n"
+                        # Capture full content from stream_end
+                        if event_type == "stream_end":
+                            full_content = json.loads(event_data).get("content", "")
 
-                    # Get response
-                    try:
-                        response = await llm.ainvoke([HumanMessage(content=prompt)])
-                        content = response.content
-                    except Exception as e:
-                        content = f"[{model_name} Error: {str(e)}]"
-
-                    latest_responses[model_key] = content
-
-                    # Yield message event
-                    msg_event = {
-                        "event_type": "message",
-                        "provider": selected_model.provider.value,
-                        "content": content,
-                        "message_id": str(uuid.uuid4()),
-                        "round_number": round_num,
-                        "max_rounds": max_rounds,
-                        "model_id": selected_model.model_id,
-                        "is_critique": round_num > 0,
-                        "timestamp": datetime.now(UTC).isoformat(),
-                    }
-                    yield f"event: message\ndata: {json.dumps(msg_event)}\n\n"
+                    # Store the response for next round's critique
+                    latest_responses[model_key] = full_content
 
                 # Round end event
                 end_event = {
@@ -376,7 +435,7 @@ async def stream_debate(session_id: str):
                     break
 
                 # Delay between rounds
-                await asyncio.sleep(1.0)
+                await asyncio.sleep(0.5)
 
         except Exception as e:
             error_event = {
