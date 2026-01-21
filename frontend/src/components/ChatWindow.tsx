@@ -50,7 +50,7 @@ export function ChatWindow({
   isActive,
 }: ChatWindowProps) {
   const filteredMessages = messages.filter((m) => m.provider === provider);
-  const scrollRef = useRef<HTMLDivElement>(null);
+  const scrollAnchorRef = useRef<HTMLDivElement>(null);
   const IconComponent = providerIcons[provider] || Bot;
 
   // Check if there's an actively streaming message
@@ -60,10 +60,13 @@ export function ChatWindow({
 
   // Auto-scroll to bottom when new messages arrive or content streams
   useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    if (scrollAnchorRef.current) {
+      scrollAnchorRef.current.scrollIntoView({
+        behavior: "smooth",
+        block: "end",
+      });
     }
-  }, [filteredMessages.length, lastMessageContent, streamingMessage?.id]);
+  }, [filteredMessages.length, lastMessageContent]);
 
   return (
     <Card className="flex flex-col h-full overflow-hidden border-border">
@@ -107,7 +110,7 @@ export function ChatWindow({
         </CardTitle>
       </CardHeader>
       <CardContent className="flex-1 overflow-hidden p-0 bg-card">
-        <ScrollArea className="h-full" ref={scrollRef}>
+        <ScrollArea className="h-full">
           <div className="p-4 space-y-3">
             {filteredMessages.length === 0 && !isActive && (
               <div className="text-center text-muted-foreground py-12">
@@ -165,6 +168,8 @@ export function ChatWindow({
                 </div>
               </div>
             )}
+            {/* Scroll anchor for auto-scroll */}
+            <div ref={scrollAnchorRef} />
           </div>
         </ScrollArea>
       </CardContent>
