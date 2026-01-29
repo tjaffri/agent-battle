@@ -79,7 +79,7 @@ export function ChatWindow({
         <CardTitle className="flex items-center gap-2 text-base font-medium">
           <div
             className={cn(
-              "w-8 h-8 rounded flex items-center justify-center",
+              "w-9 h-9 sm:w-8 sm:h-8 rounded flex items-center justify-center flex-shrink-0",
               providerColors[provider]
             )}
           >
@@ -111,20 +111,25 @@ export function ChatWindow({
       </CardHeader>
       <CardContent className="flex-1 overflow-hidden p-0 bg-card">
         <ScrollArea className="h-full">
-          <div className="p-4 space-y-3">
+          <div className="p-3 sm:p-4 space-y-3">
             {filteredMessages.length === 0 && !isActive && (
-              <div className="text-center text-muted-foreground py-12">
+              <div className="text-center text-muted-foreground py-8 sm:py-12">
                 <div
                   className={cn(
-                    "w-12 h-12 rounded mx-auto mb-3 flex items-center justify-center opacity-50",
+                    "w-10 h-10 sm:w-12 sm:h-12 rounded mx-auto mb-3 flex items-center justify-center opacity-50",
                     providerBgColors[provider]
                   )}
                 >
                   <IconComponent
-                    className={cn("w-6 h-6", providerTextColors[provider])}
+                    className={cn(
+                      "w-5 h-5 sm:w-6 sm:h-6",
+                      providerTextColors[provider]
+                    )}
                   />
                 </div>
-                <p className="text-sm">{title} responses will appear here</p>
+                <p className="text-xs sm:text-sm">
+                  {title} responses will appear here
+                </p>
               </div>
             )}
             {filteredMessages.map((message) => (

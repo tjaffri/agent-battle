@@ -2,6 +2,7 @@ import { useState, useMemo } from "react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { ChatWindow } from "./ChatWindow";
+import { MobileChatTabs } from "./MobileChatTabs";
 import { DebateSettings } from "./DebateSettings";
 import { useDebate } from "../hooks/useDebate";
 import { Send, Square, RotateCcw, Zap } from "lucide-react";
@@ -54,17 +55,17 @@ export function DebateArena() {
   return (
     <div className="flex flex-col h-screen">
       {/* Header - UiPath style with orange accent */}
-      <header className="bg-secondary text-white px-6 py-4">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <div className="w-10 h-10 bg-primary rounded flex items-center justify-center">
-              <Zap className="w-6 h-6 text-white" />
+      <header className="bg-secondary text-white px-4 sm:px-6 py-3 sm:py-4">
+        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
+          <div className="flex items-center gap-3 sm:gap-4">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 bg-primary rounded flex items-center justify-center">
+              <Zap className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
             </div>
             <div>
-              <h1 className="text-xl font-semibold tracking-tight">
+              <h1 className="text-lg sm:text-xl font-semibold tracking-tight">
                 Agent Battle
               </h1>
-              <p className="text-sm text-white/70">
+              <p className="text-xs sm:text-sm text-white/70">
                 {modelDisplayInfo[0]?.name || "GPT-4o"} vs{" "}
                 {modelDisplayInfo[1]?.name || "Gemini 2.0"} — AI Debate Arena
               </p>
@@ -72,14 +73,14 @@ export function DebateArena() {
           </div>
           {state.messages.length > 0 && (
             <div className="flex items-center gap-6">
-              <div className="text-right">
-                <p className="text-2xl font-semibold">
+              <div className="text-left sm:text-right">
+                <p className="text-xl sm:text-2xl font-semibold">
                   Round {state.roundNumber + 1}{" "}
-                  <span className="text-lg text-white/60">
+                  <span className="text-base sm:text-lg text-white/60">
                     / {state.maxRounds}
                   </span>
                 </p>
-                <p className="text-sm text-white/60">
+                <p className="text-xs sm:text-sm text-white/60">
                   {state.messages.length} messages
                 </p>
               </div>
@@ -89,57 +90,59 @@ export function DebateArena() {
       </header>
 
       {/* Question Input - Clean UiPath style */}
-      <div className="bg-card border-b border-border px-6 py-5">
+      <div className="bg-card border-b border-border px-4 sm:px-6 py-4 sm:py-5">
         <form
           onSubmit={handleSubmit}
-          className="max-w-4xl mx-auto flex gap-3 items-center"
+          className="max-w-4xl mx-auto flex flex-col sm:flex-row gap-3 items-stretch sm:items-center"
         >
           <Input
             value={question}
             onChange={(e) => setQuestion(e.target.value)}
-            placeholder={`Ask a question to start the debate between ${modelDisplayInfo[0]?.name || "AI 1"} and ${modelDisplayInfo[1]?.name || "AI 2"}...`}
+            placeholder={`Ask a question to start the debate...`}
             disabled={state.isActive}
             className="flex-1 h-12 text-base border-border focus:border-primary focus:ring-primary"
             data-testid="question-input"
           />
-          {state.isActive ? (
-            <Button
-              type="button"
-              onClick={stopDebate}
-              variant="destructive"
-              size="lg"
-              className="h-12 px-6 rounded"
-              data-testid="stop-button"
-            >
-              <Square className="w-4 h-4 mr-2" />
-              Stop Debate
-            </Button>
-          ) : (
-            <>
+          <div className="flex gap-2 sm:gap-3">
+            {state.isActive ? (
               <Button
-                type="submit"
-                disabled={!question.trim()}
+                type="button"
+                onClick={stopDebate}
+                variant="destructive"
                 size="lg"
-                className="h-12 px-6 bg-primary hover:bg-primary-hover text-white rounded font-medium"
-                data-testid="start-button"
+                className="flex-1 sm:flex-initial h-12 px-4 sm:px-6 rounded"
+                data-testid="stop-button"
               >
-                <Send className="w-4 h-4 mr-2" />
-                Start Debate
+                <Square className="w-4 h-4 mr-2" />
+                Stop Debate
               </Button>
-              {state.messages.length > 0 && (
+            ) : (
+              <>
                 <Button
-                  type="button"
-                  onClick={handleReset}
-                  variant="outline"
+                  type="submit"
+                  disabled={!question.trim()}
                   size="lg"
-                  className="h-12 rounded border-border hover:bg-muted"
-                  data-testid="reset-button"
+                  className="flex-1 sm:flex-initial h-12 px-4 sm:px-6 bg-primary hover:bg-primary-hover text-white rounded font-medium"
+                  data-testid="start-button"
                 >
-                  <RotateCcw className="w-4 h-4" />
+                  <Send className="w-4 h-4 mr-2" />
+                  Start Debate
                 </Button>
-              )}
-            </>
-          )}
+                {state.messages.length > 0 && (
+                  <Button
+                    type="button"
+                    onClick={handleReset}
+                    variant="outline"
+                    size="lg"
+                    className="h-12 px-4 rounded border-border hover:bg-muted"
+                    data-testid="reset-button"
+                  >
+                    <RotateCcw className="w-4 h-4" />
+                  </Button>
+                )}
+              </>
+            )}
+          </div>
         </form>
         {state.question && (
           <div className="max-w-4xl mx-auto mt-4">
@@ -166,8 +169,8 @@ export function DebateArena() {
         </div>
       </div>
 
-      {/* Side-by-side Chat Windows */}
-      <div className="flex-1 grid grid-cols-2 gap-4 p-4 bg-background min-h-0 overflow-hidden">
+      {/* Desktop: Side-by-side Chat Windows */}
+      <div className="hidden md:grid flex-1 grid-cols-2 gap-4 p-4 bg-background min-h-0 overflow-hidden">
         <ChatWindow
           provider={modelDisplayInfo[0]?.provider || "openai"}
           messages={state.messages}
@@ -182,8 +185,17 @@ export function DebateArena() {
         />
       </div>
 
+      {/* Mobile: Tabbed Chat Windows */}
+      <div className="flex md:hidden flex-1 flex-col p-2 sm:p-4 bg-background min-h-0 overflow-hidden">
+        <MobileChatTabs
+          models={modelDisplayInfo}
+          messages={state.messages}
+          isActive={state.isActive}
+        />
+      </div>
+
       {/* Footer - Clean UiPath style */}
-      <footer className="bg-card border-t border-border px-6 py-3 text-center text-sm text-muted-foreground">
+      <footer className="bg-card border-t border-border px-4 sm:px-6 py-2 sm:py-3 text-center text-xs sm:text-sm text-muted-foreground">
         <p>
           Powered by{" "}
           <span
@@ -196,8 +208,8 @@ export function DebateArena() {
             className={`font-medium text-${modelDisplayInfo[1]?.provider || "gemini"}`}
           >
             {modelDisplayInfo[1]?.name || "Gemini 2.0"}
-          </span>{" "}
-          | Built with LangGraph
+          </span>
+          <span className="hidden sm:inline"> | Built with LangGraph</span>
         </p>
       </footer>
     </div>
