@@ -30,7 +30,7 @@ export function MessageBubble({ message }: MessageBubbleProps) {
   return (
     <div
       className={cn(
-        "p-4 rounded border transition-all",
+        "p-3 sm:p-4 rounded border transition-all",
         providerBgStyles[provider],
         message.isCritique && "border-l-4",
         message.isCritique && providerBorderStyles[provider],
@@ -38,7 +38,7 @@ export function MessageBubble({ message }: MessageBubbleProps) {
       )}
       data-testid={`message-${message.id}`}
     >
-      <div className="flex items-center gap-2 mb-3">
+      <div className="flex items-center gap-1.5 sm:gap-2 mb-2 sm:mb-3">
         <span
           className={cn(
             "text-xs font-medium px-2.5 py-1 rounded",

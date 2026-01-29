@@ -127,22 +127,22 @@ export function DebateSettings({
   return (
     <Card className="border-border">
       <CardHeader
-        className="py-3 px-4 cursor-pointer hover:bg-muted/50 transition-colors"
+        className="min-h-[44px] py-3 px-4 cursor-pointer hover:bg-muted/50 transition-colors"
         onClick={() => !disabled && setIsExpanded(!isExpanded)}
       >
         <CardTitle className="flex items-center justify-between text-sm font-medium">
           <div className="flex items-center gap-2">
-            <Settings className="w-4 h-4 text-muted-foreground" />
+            <Settings className="w-4 h-4 text-muted-foreground flex-shrink-0" />
             <span>Debate Settings</span>
           </div>
-          <div className="flex items-center gap-3">
-            <span className="text-xs text-muted-foreground font-normal">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <span className="text-xs text-muted-foreground font-normal truncate max-w-[120px] sm:max-w-none">
               {config.maxRounds} rounds | {getSelectedModelNames()}
             </span>
             {isExpanded ? (
-              <ChevronUp className="w-4 h-4 text-muted-foreground" />
+              <ChevronUp className="w-4 h-4 text-muted-foreground flex-shrink-0" />
             ) : (
-              <ChevronDown className="w-4 h-4 text-muted-foreground" />
+              <ChevronDown className="w-4 h-4 text-muted-foreground flex-shrink-0" />
             )}
           </div>
         </CardTitle>
@@ -215,7 +215,7 @@ export function DebateSettings({
                             onClick={() => handleModelToggle(model)}
                             disabled={disabled}
                             className={cn(
-                              "relative p-3 rounded border text-left transition-all",
+                              "relative p-3 rounded border text-left transition-all min-h-[44px]",
                               "disabled:opacity-50 disabled:cursor-not-allowed",
                               selected
                                 ? providerBgColors[model.provider]
