@@ -1,10 +1,26 @@
 import ReactMarkdown from "react-markdown";
 import { cn } from "../lib/utils";
 import type { Message, LLMProvider } from "../types";
+import { Bot, Sparkles, Brain } from "lucide-react";
 
 interface MessageBubbleProps {
   message: Message;
+  alignment?: "left" | "right";
+  showProviderLabel?: boolean;
+  providerName?: string;
 }
+
+const providerIcons: Record<LLMProvider, typeof Bot> = {
+  openai: Bot,
+  gemini: Sparkles,
+  anthropic: Brain,
+};
+
+const providerIconBgColors: Record<LLMProvider, string> = {
+  openai: "bg-openai",
+  gemini: "bg-gemini",
+  anthropic: "bg-anthropic",
+};
 
 const providerBgStyles: Record<LLMProvider, string> = {
   openai: "bg-openai/5 border-openai/20",
@@ -24,9 +40,68 @@ const providerBadgeStyles: Record<LLMProvider, string> = {
   anthropic: "bg-anthropic/10 text-anthropic",
 };
 
-export function MessageBubble({ message }: MessageBubbleProps) {
+export function MessageBubble({
+  message,
+  alignment,
+  showProviderLabel,
+  providerName,
+}: MessageBubbleProps) {
   const provider = message.provider;
+  const IconComponent = providerIcons[provider] || Bot;
 
+  // Consolidated view styling (with alignment)
+  if (alignment) {
+    const isRight = alignment === "right";
+    return (
+      <div
+        className={cn("flex", isRight ? "justify-end" : "justify-start")}
+        data-testid={`message-${message.id}`}
+      >
+        <div
+          className={cn(
+            "max-w-[85%] sm:max-w-[75%] p-3 sm:p-4 rounded-2xl border transition-all",
+            providerBgStyles[provider],
+            isRight ? "rounded-br-sm" : "rounded-bl-sm",
+            message.isStreaming && "ring-1 ring-offset-1 ring-primary/30"
+          )}
+        >
+          {showProviderLabel && (
+            <div
+              className={cn(
+                "flex items-center gap-1.5 mb-2",
+                isRight ? "flex-row-reverse" : "flex-row"
+              )}
+            >
+              <div
+                className={cn(
+                  "w-5 h-5 rounded flex items-center justify-center flex-shrink-0",
+                  providerIconBgColors[provider]
+                )}
+              >
+                <IconComponent className="w-3 h-3 text-white" />
+              </div>
+              <span
+                className={cn(
+                  "text-xs font-medium px-2 py-0.5 rounded",
+                  providerBadgeStyles[provider]
+                )}
+              >
+                {providerName || provider}
+              </span>
+            </div>
+          )}
+          <div className="prose prose-sm max-w-none text-foreground prose-headings:text-foreground prose-strong:text-foreground prose-p:my-2 prose-ul:my-2 prose-ol:my-2 prose-li:my-0.5">
+            <ReactMarkdown>{message.content}</ReactMarkdown>
+            {message.isStreaming && (
+              <span className="inline-block w-2 h-4 bg-foreground/70 animate-pulse ml-0.5" />
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Default view styling (original)
   return (
     <div
       className={cn(

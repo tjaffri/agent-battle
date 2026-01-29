@@ -3,6 +3,7 @@ import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { ChatWindow } from "./ChatWindow";
 import { MobileChatTabs } from "./MobileChatTabs";
+import { ConsolidatedChatWindow } from "./ConsolidatedChatWindow";
 import { DebateSettings } from "./DebateSettings";
 import { useDebate } from "../hooks/useDebate";
 import { Send, Square, RotateCcw, Zap } from "lucide-react";
@@ -169,30 +170,43 @@ export function DebateArena() {
         </div>
       </div>
 
-      {/* Desktop: Side-by-side Chat Windows */}
-      <div className="hidden md:grid flex-1 grid-cols-2 gap-4 p-4 bg-background min-h-0 overflow-hidden">
-        <ChatWindow
-          provider={modelDisplayInfo[0]?.provider || "openai"}
-          messages={state.messages}
-          title={modelDisplayInfo[0]?.name || "GPT-4o"}
-          isActive={state.isActive}
-        />
-        <ChatWindow
-          provider={modelDisplayInfo[1]?.provider || "gemini"}
-          messages={state.messages}
-          title={modelDisplayInfo[1]?.name || "Gemini 2.0"}
-          isActive={state.isActive}
-        />
-      </div>
+      {/* Show consolidated view when debate is stopped with messages */}
+      {!state.isActive && state.messages.length > 0 ? (
+        <div className="flex-1 p-2 sm:p-4 bg-background min-h-0 overflow-hidden">
+          <ConsolidatedChatWindow
+            messages={state.messages}
+            question={state.question}
+            models={modelDisplayInfo}
+          />
+        </div>
+      ) : (
+        <>
+          {/* Desktop: Side-by-side Chat Windows */}
+          <div className="hidden md:grid flex-1 grid-cols-2 gap-4 p-4 bg-background min-h-0 overflow-hidden">
+            <ChatWindow
+              provider={modelDisplayInfo[0]?.provider || "openai"}
+              messages={state.messages}
+              title={modelDisplayInfo[0]?.name || "GPT-4o"}
+              isActive={state.isActive}
+            />
+            <ChatWindow
+              provider={modelDisplayInfo[1]?.provider || "gemini"}
+              messages={state.messages}
+              title={modelDisplayInfo[1]?.name || "Gemini 2.0"}
+              isActive={state.isActive}
+            />
+          </div>
 
-      {/* Mobile: Tabbed Chat Windows */}
-      <div className="flex md:hidden flex-1 flex-col p-2 sm:p-4 bg-background min-h-0 overflow-hidden">
-        <MobileChatTabs
-          models={modelDisplayInfo}
-          messages={state.messages}
-          isActive={state.isActive}
-        />
-      </div>
+          {/* Mobile: Tabbed Chat Windows */}
+          <div className="flex md:hidden flex-1 flex-col p-2 sm:p-4 bg-background min-h-0 overflow-hidden">
+            <MobileChatTabs
+              models={modelDisplayInfo}
+              messages={state.messages}
+              isActive={state.isActive}
+            />
+          </div>
+        </>
+      )}
 
       {/* Footer - Clean UiPath style */}
       <footer className="bg-card border-t border-border px-4 sm:px-6 py-2 sm:py-3 text-center text-xs sm:text-sm text-muted-foreground">
